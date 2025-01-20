@@ -1,7 +1,6 @@
 from tkinter import *
 import pandas
 import random
-from tkinter import messagebox
 from pygame import mixer
 
 # Constants
@@ -19,8 +18,9 @@ def show_next_card():
     if len(cards_to_learn) == 0:
         if timer is not None:
             window.after_cancel(timer)
+        print("finished while game")
         all_words_learnt()
-        window.quit()
+
     else:
         if timer is not None:
             window.after_cancel(timer)
@@ -43,8 +43,16 @@ def remove_learnt_card():
 
 
 def all_words_learnt():
-    """Show message that all words have been learnt"""
-    messagebox.showinfo(message="Congratulations!!! You have learnt all the words!")
+    """Change text of card and disable buttons"""
+    correct_button.config(state="disabled")
+    wrong_button.config(state="disabled")
+    canvas.itemconfig(card_image, image=flashcard_front)
+    canvas.itemconfig(card_language, text="", fill="black")
+    canvas.itemconfig(card_transcription, text="", fill="black")
+    canvas.itemconfig(card_word, text="Well done!!!\n You have learnt all the words!",
+                      fill="black",
+                      font=(FONT_NAME, 40, "normal"),
+                      justify="center")
 
 
 # ---------------------------------- SHOW TRANSLATION ---------------------------------- #
@@ -54,19 +62,6 @@ def flip_card(card):
     canvas.itemconfig(card_language, text="English", fill="white")
     canvas.itemconfig(card_transcription, text="")
     canvas.itemconfig(card_word, text=card["English"], fill="white")
-
-
-# ---------------------------------- READ FILE ---------------------------------- #
-try:
-    remaining_cards = pandas.read_csv("data/words_to_learn.csv")
-except FileNotFoundError:
-    all_cards = pandas.read_csv("data/chinese_hsk1.csv")
-    cards_to_learn = all_cards.to_dict(orient="records")
-except pandas.errors.EmptyDataError:
-    all_words_learnt()
-    exit()
-else:
-    cards_to_learn = remaining_cards.to_dict(orient="records")
 
 
 # ---------------------------------- UI SETUP ---------------------------------- #
@@ -103,12 +98,21 @@ correct_button.place(x=564, y=750)
 wrong_icon = PhotoImage(file="images/wrong_button.png")
 wrong_button = Button(image=wrong_icon, width=95, height=95, highlightthickness=0, command=show_next_card)
 wrong_button.place(x=1064, y=750)
-
+# ---------------------------------- READ FILE ---------------------------------- #
+try:
+    remaining_cards = pandas.read_csv("data/words_to_learn.csv")
+except FileNotFoundError:
+    all_cards = pandas.read_csv("data/chinese_hsk1.csv")
+    cards_to_learn = all_cards.to_dict(orient="records")
+except pandas.errors.EmptyDataError:
+    all_words_learnt()
+else:
+    cards_to_learn = remaining_cards.to_dict(orient="records")
 # ---------------------------------- PLAY SOUND ---------------------------------- #
 
 mixer.init()
-sound = mixer.Sound("sounds/ocean_waves.mp3")
-sound.play(loops=-1)
+ocean_sound = mixer.Sound("sounds/ocean_waves.mp3")
+ocean_sound.play(loops=-1)
 show_next_card()
 
 window.mainloop()
