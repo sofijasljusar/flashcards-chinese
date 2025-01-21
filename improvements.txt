@@ -1,2 +1,3 @@
 # TODO: 1. Add chinese song to celebrate all words learned and maybe dance (baby shark?)
 # TODO: 2. Add background video - maybe underwater with dolphins (but figure out a way not to use so much memory)
+# TODO: 3. Refactor to class based ui

@@ -3,15 +3,14 @@ import pandas
 import random
 from pygame import mixer
 
-# Constants
-BACKGROUND_COLOR = "#004A65"
+# ---------------------------------- CONSTANTS ---------------------------------- #
 FONT_NAME = "Arial"
 timer = None
 cards_to_learn = {}
 current_card = {}
 
 
-# ---------------------------------- CHANGE CARD ---------------------------------- #
+# ---------------------------------- FUNCTIONALITY ---------------------------------- #
 def show_next_card():
     """Show next card with foreign word."""
     global timer, current_card
@@ -55,7 +54,6 @@ def all_words_learnt():
                       justify="center")
 
 
-# ---------------------------------- SHOW TRANSLATION ---------------------------------- #
 def flip_card(card):
     """Flip current card and show translation"""
     canvas.itemconfig(card_image, image=flashcard_back)
@@ -71,10 +69,10 @@ window.title("Learn Chinese with Flashcards!")
 screen_height = window.winfo_screenheight()
 screen_width = window.winfo_screenwidth()
 window.minsize(width=screen_width, height=screen_height)
+window.attributes('-fullscreen', True)
 
 # Background
-# TODO: 2. Handle end of words situation with some animation
-background = Canvas(window, width=1728, height=1117, highlightthickness=0)
+background = Canvas(window, width=screen_width, height=screen_height, highlightthickness=0)
 background_image = PhotoImage(file="images/beach1.png")
 background.create_image(0, 0, image=background_image, anchor=NW)
 background.place(x=0, y=0)
@@ -87,17 +85,19 @@ card_image = canvas.create_image(400, 263)
 card_language = canvas.create_text(400, 115, font=(FONT_NAME, 40, "italic"))
 card_transcription = canvas.create_text(400, 175, font=(FONT_NAME, 30, "normal"))
 card_word = canvas.create_text(400, 263, font=(FONT_NAME, 80, "bold"), width=800)
-canvas.place(x=464, y=150)
+canvas.place(x=(screen_width-800)/2, y=0.15*screen_height)
 
 # Correct button
 correct_icon = PhotoImage(file="images/correct_button.png")
 correct_button = Button(image=correct_icon, width=95, height=95, highlightthickness=0, command=remove_learnt_card)
-correct_button.place(x=564, y=750)
+correct_button.place(x=(screen_width-800)/2+100, y=0.68*screen_height)
 
 # Wrong button
 wrong_icon = PhotoImage(file="images/wrong_button.png")
 wrong_button = Button(image=wrong_icon, width=95, height=95, highlightthickness=0, command=show_next_card)
-wrong_button.place(x=1064, y=750)
+wrong_button.place(x=(screen_width-800)/2+600, y=0.68*screen_height)
+
+
 # ---------------------------------- READ FILE ---------------------------------- #
 try:
     remaining_cards = pandas.read_csv("data/words_to_learn.csv")
@@ -108,8 +108,9 @@ except pandas.errors.EmptyDataError:
     all_words_learnt()
 else:
     cards_to_learn = remaining_cards.to_dict(orient="records")
-# ---------------------------------- PLAY SOUND ---------------------------------- #
 
+
+# ---------------------------------- PLAY SOUND ---------------------------------- #
 mixer.init()
 ocean_sound = mixer.Sound("sounds/ocean_waves.mp3")
 ocean_sound.play(loops=-1)
