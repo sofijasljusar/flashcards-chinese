@@ -1,119 +1,177 @@
+import sys
 from tkinter import *
 import pandas
 import random
 from pygame import mixer
 
-# ---------------------------------- CONSTANTS ---------------------------------- #
-FONT_NAME = "Arial"
-timer = None
-cards_to_learn = {}
-current_card = {}
+
+class FlashcardApp:
+
+    def __init__(self):
+        self.tk = Tk()
+        self.tk.title("Learn Chinese with Flashcards!")
+        self.tk.attributes('-fullscreen', True)
+        self.tk.bind("<Escape>", self.exit)
+        self.tk.bind("<space>", self.mute)
+        self.font = "Arial"
+        self.timer = None
+        self.cards_to_learn = {}
+        self.current_card = {}
+
+        self.setup_ui()
+        self.tk.after(3000, self.get_data)
+        self.tk.after(3000, self.load_card_text)
+
+        mixer.init()
+        self.ocean_sound = mixer.Sound("sounds/ocean_waves.mp3")
+        self.ocean_sound.play(loops=-1)
+
+        self.tk.mainloop()
+
+    def exit(self, event):
+        """Close window when 'escape' is pressed."""
+        self.tk.destroy()
+
+    def mute(self, event):
+        """Mute sound when 'space' is pressed."""
+        self.ocean_sound.stop()
+
+    def setup_ui(self):
+        """Set up UI."""
+        self.tk.grid_columnconfigure(0, weight=1)
+        self.tk.grid_rowconfigure(0, weight=1)
+
+        self.main = Frame(self.tk)
+        self.main.grid_rowconfigure(0, weight=1, uniform="True")
+        self.main.grid_rowconfigure(1, weight=5, uniform="True")
+        self.main.grid_rowconfigure(2, weight=1, uniform="True")
+        self.main.grid_rowconfigure(3, weight=1, uniform="True")
+        self.main.grid_rowconfigure(4, weight=1, uniform="True")
+        for x in range(16):
+            self.main.grid_columnconfigure(x, weight=1)
+        self.main.grid(row=0, column=0, sticky="nsew")
+
+        self.background = Canvas(self.main, highlightthickness=0, bg="green")
+        self.background.grid(row=0, column=0, rowspan=5, columnspan=16, sticky="nsew")
+
+        self.background_image = PhotoImage(file="images/beach1.png")
+        self.background.create_image(0, 0, image=self.background_image, anchor=NW)
+
+        self.card = Canvas(self.main, bg="white", highlightthickness=0)
+        self.card.grid(row=1, column=5, columnspan=6, sticky="nsew")
+
+        self.correct_icon = PhotoImage(file="images/correct_button.png")
+        self.correct_button = Button(self.main, image=self.correct_icon, highlightthickness=0,
+                                     command=self.remove_learnt_card)
+        self.correct_button.grid(row=3, column=5)
+
+        self.wrong_icon = PhotoImage(file="images/wrong_button.png")
+        self.wrong_button = Button(self.main, image=self.wrong_icon, highlightthickness=0, command=self.show_next_card)
+        self.wrong_button.grid(row=3, column=10)
+
+        self.loader = Label(self.main,
+                            text="Press 'esc' to quit,\n 'space' to mute",
+                            font=(self.font, 30),
+                            bg="white",
+                            fg="black")
+        self.loader.grid(row=1, column=5, columnspan=6, sticky="nsew")
+
+    def load_card_text(self):
+        """Load correct text position and display text on card."""
+        self.loader.grid_forget()  # Hide the loader
+
+        canvas_width = self.card.winfo_width()
+        canvas_height = self.card.winfo_height()
+        print(canvas_height, canvas_width)
+        center_x = canvas_width // 2
+        self.card_language = self.card.create_text(center_x, canvas_height // 7,
+                                                   font=(self.font, 40, "italic"),
+                                                   fill="black")
+        self.card_transcription = self.card.create_text(center_x, canvas_height // 4,
+                                                        font=(self.font, 30, "normal"),
+                                                        fill="black")
+        self.card_word = self.card.create_text(center_x, canvas_height // 2,
+                                               font=(self.font, 160, "bold"),
+                                               fill="black")
+        self.show_next_card()
+
+    def get_data(self):
+        """Load foreign words from file."""
+        try:
+            remaining_cards = pandas.read_csv("data/words_to_learn.csv")
+        except FileNotFoundError:
+
+            all_cards = pandas.read_csv("data/chinese_hsk1.csv")
+            self.cards_to_learn = all_cards.to_dict(orient="records")
+            print(len(self.cards_to_learn))
+        except pandas.errors.EmptyDataError:
+            self.all_words_learnt()
+        else:
+            self.cards_to_learn = remaining_cards.to_dict(orient="records")
+
+    def show_next_card(self):
+        """Show next card with foreign word."""
+        print(len(self.cards_to_learn))
+        if len(self.cards_to_learn) == 0:
+            if self.timer is not None:
+                self.tk.after_cancel(self.timer)
+            self.all_words_learnt()
+
+        else:
+            if self.timer is not None:
+                self.tk.after_cancel(self.timer)
+            self.current_card = random.choice(self.cards_to_learn)
+            self.card.config(bg="white")
+            self.card.itemconfig(self.card_language,
+                                 text="Chinese",
+                                 fill="black")
+            self.card.itemconfig(self.card_transcription,
+                                 text=self.current_card["Pinyin"],
+                                 fill="black")
+            self.card.itemconfig(self.card_word,
+                                 text=self.current_card["Chinese"],
+                                 fill="black")
+            self.timer = self.tk.after(3000, self.flip_card, self.current_card)
+
+    def flip_card(self, card):
+        """Flip current card and show translation."""
+        self.card.config(bg="black")
+        self.card.itemconfig(self.card_language,
+                             text="English",
+                             fill="white")
+        self.card.itemconfig(self.card_transcription,
+                             text="")
+        self.card.itemconfig(self.card_word,
+                             text=card["English"],
+                             fill="white",
+                             font=(self.font, 80, "bold"))
+
+    def remove_learnt_card(self):
+        """Remove learnt card from words_to_learn file."""
+        print(type(self.cards_to_learn))
+        if self.current_card in self.cards_to_learn:
+            self.cards_to_learn.remove(self.current_card)
+            words_to_learn = pandas.DataFrame(self.cards_to_learn)
+            words_to_learn.to_csv("data/words_to_learn.csv", index=False)
+            self.show_next_card()
+
+    def all_words_learnt(self):
+        """Show text "all words learnt" and disable buttons."""
+        self.correct_button.config(state="disabled")
+        self.wrong_button.config(state="disabled")
+        self.card.config(bg="white")
+        self.card.itemconfig(self.card_language,
+                             text="",
+                             fill="black")
+        self.card.itemconfig(self.card_transcription,
+                             text="",
+                             fill="black")
+        self.card.itemconfig(self.card_word,
+                             text="Well done!!!\n You have learnt all the words!",
+                             fill="black",
+                             font=(self.font, 40, "normal"),
+                             justify="center")
 
 
-# ---------------------------------- FUNCTIONALITY ---------------------------------- #
-def show_next_card():
-    """Show next card with foreign word."""
-    global timer, current_card
-    if len(cards_to_learn) == 0:
-        if timer is not None:
-            window.after_cancel(timer)
-        print("finished while game")
-        all_words_learnt()
-
-    else:
-        if timer is not None:
-            window.after_cancel(timer)
-        current_card = random.choice(cards_to_learn)
-        canvas.itemconfig(card_image, image=flashcard_front)
-        canvas.itemconfig(card_language, text="Chinese", fill="black")
-        canvas.itemconfig(card_transcription, text=current_card["Pinyin"], fill="black")
-        canvas.itemconfig(card_word, text=current_card["Chinese"], fill="black")
-        timer = window.after(3000, flip_card, current_card)
-
-
-def remove_learnt_card():
-    """Remove learnt card from words_to_learn file"""
-    global current_card
-    if current_card in cards_to_learn:
-        cards_to_learn.remove(current_card)
-        words_to_learn = pandas.DataFrame(cards_to_learn)
-        words_to_learn.to_csv("data/words_to_learn.csv", index=False)
-        show_next_card()
-
-
-def all_words_learnt():
-    """Change text of card and disable buttons"""
-    correct_button.config(state="disabled")
-    wrong_button.config(state="disabled")
-    canvas.itemconfig(card_image, image=flashcard_front)
-    canvas.itemconfig(card_language, text="", fill="black")
-    canvas.itemconfig(card_transcription, text="", fill="black")
-    canvas.itemconfig(card_word, text="Well done!!!\n You have learnt all the words!",
-                      fill="black",
-                      font=(FONT_NAME, 40, "normal"),
-                      justify="center")
-
-
-def flip_card(card):
-    """Flip current card and show translation"""
-    canvas.itemconfig(card_image, image=flashcard_back)
-    canvas.itemconfig(card_language, text="English", fill="white")
-    canvas.itemconfig(card_transcription, text="")
-    canvas.itemconfig(card_word, text=card["English"], fill="white")
-
-
-# ---------------------------------- UI SETUP ---------------------------------- #
-# Window set up
-window = Tk()
-window.title("Learn Chinese with Flashcards!")
-screen_height = window.winfo_screenheight()
-screen_width = window.winfo_screenwidth()
-window.minsize(width=screen_width, height=screen_height)
-window.attributes('-fullscreen', True)
-
-# Background
-background = Canvas(window, width=screen_width, height=screen_height, highlightthickness=0)
-background_image = PhotoImage(file="images/beach1.png")
-background.create_image(0, 0, image=background_image, anchor=NW)
-background.place(x=0, y=0)
-
-# Flashcard
-canvas = Canvas(width=800, height=526, highlightthickness=0)
-flashcard_front = PhotoImage(file="images/white_square.png")
-flashcard_back = PhotoImage(file="images/black_square.png")
-card_image = canvas.create_image(400, 263)
-card_language = canvas.create_text(400, 115, font=(FONT_NAME, 40, "italic"))
-card_transcription = canvas.create_text(400, 175, font=(FONT_NAME, 30, "normal"))
-card_word = canvas.create_text(400, 263, font=(FONT_NAME, 80, "bold"), width=800)
-canvas.place(x=(screen_width-800)/2, y=0.15*screen_height)
-
-# Correct button
-correct_icon = PhotoImage(file="images/correct_button.png")
-correct_button = Button(image=correct_icon, width=95, height=95, highlightthickness=0, command=remove_learnt_card)
-correct_button.place(x=(screen_width-800)/2+100, y=0.68*screen_height)
-
-# Wrong button
-wrong_icon = PhotoImage(file="images/wrong_button.png")
-wrong_button = Button(image=wrong_icon, width=95, height=95, highlightthickness=0, command=show_next_card)
-wrong_button.place(x=(screen_width-800)/2+600, y=0.68*screen_height)
-
-
-# ---------------------------------- READ FILE ---------------------------------- #
-try:
-    remaining_cards = pandas.read_csv("data/words_to_learn.csv")
-except FileNotFoundError:
-    all_cards = pandas.read_csv("data/chinese_hsk1.csv")
-    cards_to_learn = all_cards.to_dict(orient="records")
-except pandas.errors.EmptyDataError:
-    all_words_learnt()
-else:
-    cards_to_learn = remaining_cards.to_dict(orient="records")
-
-
-# ---------------------------------- PLAY SOUND ---------------------------------- #
-mixer.init()
-ocean_sound = mixer.Sound("sounds/ocean_waves.mp3")
-ocean_sound.play(loops=-1)
-show_next_card()
-
-window.mainloop()
+if __name__ == '__main__':
+    FlashcardApp()
