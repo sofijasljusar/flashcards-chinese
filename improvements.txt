@@ -1,6 +1,0 @@
-# TODO: 1. Add "escape" button press to exit app DONE
-# TODO: 2. Add sound mute button DONE
-# TODO: 3. Change layout so that is it adjustable for different screen dimensions DONE
-# TODO: 4. Refactor to class based ui DONE
-# TODO: 5. Add chinese song to celebrate all words learned and maybe dance (baby shark?)
-# TODO: 6. Add background video - maybe underwater with dolphins (but figure out a way not to use so much memory)
