@@ -82,7 +82,6 @@ class FlashcardApp:
 
         canvas_width = self.card.winfo_width()
         canvas_height = self.card.winfo_height()
-        print(canvas_height, canvas_width)
         center_x = canvas_width // 2
         self.card_language = self.card.create_text(center_x, canvas_height // 7,
                                                    font=(self.font, 40, "italic"),
@@ -91,7 +90,7 @@ class FlashcardApp:
                                                         font=(self.font, 30, "normal"),
                                                         fill="black")
         self.card_word = self.card.create_text(center_x, canvas_height // 2,
-                                               font=(self.font, 160, "bold"),
+                                               font=(self.font, 140, "bold"),
                                                fill="black")
         self.show_next_card()
 
@@ -103,7 +102,6 @@ class FlashcardApp:
 
             all_cards = pandas.read_csv("data/chinese_hsk1.csv")
             self.cards_to_learn = all_cards.to_dict(orient="records")
-            print(len(self.cards_to_learn))
         except pandas.errors.EmptyDataError:
             self.all_words_learnt()
         else:
@@ -111,7 +109,6 @@ class FlashcardApp:
 
     def show_next_card(self):
         """Show next card with foreign word."""
-        print(len(self.cards_to_learn))
         if len(self.cards_to_learn) == 0:
             if self.timer is not None:
                 self.tk.after_cancel(self.timer)
@@ -130,6 +127,7 @@ class FlashcardApp:
                                  fill="black")
             self.card.itemconfig(self.card_word,
                                  text=self.current_card["Chinese"],
+                                 font=(self.font, 160, "bold"),
                                  fill="black")
             self.timer = self.tk.after(3000, self.flip_card, self.current_card)
 
@@ -148,7 +146,6 @@ class FlashcardApp:
 
     def remove_learnt_card(self):
         """Remove learnt card from words_to_learn file."""
-        print(type(self.cards_to_learn))
         if self.current_card in self.cards_to_learn:
             self.cards_to_learn.remove(self.current_card)
             words_to_learn = pandas.DataFrame(self.cards_to_learn)
