@@ -100,7 +100,7 @@ class FlashcardApp:
             remaining_cards = pandas.read_csv("data/words_to_learn.csv")
         except FileNotFoundError:
 
-            all_cards = pandas.read_csv("data/chinese_hsk1.csv")
+            all_cards = pandas.read_csv("data/chinese_hsk3_50.csv")
             self.cards_to_learn = all_cards.to_dict(orient="records")
         except pandas.errors.EmptyDataError:
             self.all_words_learnt()
